@@ -4,10 +4,7 @@ import com.example.traiviu_backend.model.User;
 import com.example.traiviu_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -15,6 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "http://localhost:8100")
 @RequiredArgsConstructor
 public class UserController {
 

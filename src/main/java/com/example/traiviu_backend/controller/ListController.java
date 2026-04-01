@@ -15,6 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/lists")
+@CrossOrigin(origins = "http://localhost:8100")
 @RequiredArgsConstructor
 public class ListController {
 
@@ -59,5 +60,39 @@ public class ListController {
 
         List<ListEntity> lists = listRepository.findByUser(user);
         return ResponseEntity.ok(lists);
+    }
+
+    @DeleteMapping("/{listId}")
+    public ResponseEntity<?> deleteList(@PathVariable UUID listId) {
+        ListEntity list = listRepository.findById(listId).orElse(null);
+
+        if (list == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "La lista no existe"));
+        }
+
+        listRepository.delete(list);
+
+        return ResponseEntity.ok(Map.of("message", "Lista eliminada correctamente"));
+    }
+
+    @PutMapping("/{listId}")
+    public ResponseEntity<?> updateList(@PathVariable UUID listId, @RequestBody Map<String, String> body) {
+        ListEntity list = listRepository.findById(listId).orElse(null);
+
+        if (list == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "La lista no existe"));
+        }
+
+        String newName = body.get("name");
+        if (newName == null || newName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El nombre es obligatorio"));
+        }
+
+        list.setName(newName.trim());
+        list.setUpdatedAt(Instant.now());
+
+        listRepository.save(list);
+
+        return ResponseEntity.ok(list);
     }
 }

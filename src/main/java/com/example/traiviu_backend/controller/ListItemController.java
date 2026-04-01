@@ -16,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/list-items")
+@CrossOrigin(origins = "http://localhost:8100")
 @RequiredArgsConstructor
 public class ListItemController {
 

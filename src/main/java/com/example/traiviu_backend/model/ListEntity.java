@@ -23,6 +23,7 @@ public class ListEntity {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false, length = 100)
