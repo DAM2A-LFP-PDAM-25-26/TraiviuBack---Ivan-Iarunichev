@@ -39,6 +39,6 @@ public class ListEntity {
     private Instant updatedAt = Instant.now();
 
     @JsonIgnore
-    @OneToMany(mappedBy = "list")
+    @OneToMany(mappedBy = "list", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ListItem> items;
 }

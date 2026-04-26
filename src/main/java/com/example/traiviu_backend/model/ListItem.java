@@ -1,17 +1,13 @@
 package com.example.traiviu_backend.model;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "list_items",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_list_items_unique_movie",
-                columnNames = {"list_id", "tmdb_id", "media_type"}
-        )
-)
+@Table(name = "list_items")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,22 +16,24 @@ import java.util.UUID;
 public class ListItem {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "list_id")
+    @ManyToOne
+    @JoinColumn(name = "list_id", nullable = false)
+    @JsonIgnore
     private ListEntity list;
 
     @Column(nullable = false)
-    private Integer tmdbId;
-
-    @Column(nullable = false, length = 10)
-    private String mediaType; // movie | tv
+    private String externalApiId;
 
     @Column(nullable = false)
-    private Instant addedAt = Instant.now();
+    private String title;
 
-    private Instant watchedAt;
+    private String year;
+
+    private String posterUrl;
+
+    @Column(nullable = false)
+    private Instant addedAt;
 }

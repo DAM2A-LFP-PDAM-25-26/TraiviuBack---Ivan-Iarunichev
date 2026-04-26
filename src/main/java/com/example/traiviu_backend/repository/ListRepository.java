@@ -1,6 +1,7 @@
 package com.example.traiviu_backend.repository;
 
 import com.example.traiviu_backend.model.ListEntity;
+import com.example.traiviu_backend.model.ListItem;
 import com.example.traiviu_backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 

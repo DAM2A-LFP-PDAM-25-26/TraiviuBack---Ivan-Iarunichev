@@ -5,8 +5,8 @@ import com.example.traiviu_backend.model.ListItem;
 import com.example.traiviu_backend.repository.ListItemRepository;
 import com.example.traiviu_backend.repository.ListRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -16,72 +16,79 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/list-items")
-@CrossOrigin(origins = "http://localhost:8100")
 @RequiredArgsConstructor
 public class ListItemController {
 
     private final ListItemRepository listItemRepository;
     private final ListRepository listRepository;
 
-    @PostMapping
-    public ResponseEntity<?> addItem(@RequestBody Map<String, String> body) {
-        String listIdStr = body.get("listId");
-        String tmdbIdStr = body.get("tmdbId");
-        String mediaType = body.get("mediaType"); // movie | tv
-
-        if (listIdStr == null || tmdbIdStr == null || mediaType == null) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "listId, tmdbId y mediaType son obligatorios"));
-        }
-
-        UUID listId = UUID.fromString(listIdStr);
-        Integer tmdbId = Integer.valueOf(tmdbIdStr);
-
-        ListEntity list = listRepository.findById(listId).orElse(null);
-        if (list == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Lista no encontrada"));
-        }
-
-        // Comprobación lógica antes de intentar guardar
-        if (listItemRepository.existsByListAndTmdbIdAndMediaType(list, tmdbId, mediaType)) {
-            return ResponseEntity.status(409)
-                    .body(Map.of("error", "La película/serie ya está en la lista"));
-        }
-
-        try {
-            ListItem item = ListItem.builder()
-                    .list(list)
-                    .tmdbId(tmdbId)
-                    .mediaType(mediaType)
-                    .addedAt(Instant.now())
-                    .build();
-
-            listItemRepository.save(item);
-            return ResponseEntity.status(201).body(item);
-        } catch (DataIntegrityViolationException ex) {
-            // Por si entra una condición de carrera y la constraint salta igualmente
-            return ResponseEntity.status(409)
-                    .body(Map.of("error", "La película/serie ya está en la lista"));
-        }
-    }
-
     @GetMapping("/list/{listId}")
-    public ResponseEntity<?> getItemsByList(@PathVariable UUID listId) {
+    public ResponseEntity<?> getItemsByList(@PathVariable UUID listId, Authentication authentication) {
+        String email = authentication.getName();
+
         ListEntity list = listRepository.findById(listId).orElse(null);
         if (list == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Lista no encontrada"));
+            return ResponseEntity.status(404).body(Map.of("error", "Lista no encontrada"));
         }
 
-        List<ListItem> items = listItemRepository.findByList(list);
+        if (!list.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No puedes ver elementos de una lista ajena"));
+        }
+
+        List<ListItem> items = listItemRepository.findByListOrderByAddedAtDesc(list);
         return ResponseEntity.ok(items);
     }
 
-    @DeleteMapping("/{itemId}")
-    public ResponseEntity<?> deleteItem(@PathVariable UUID itemId) {
-        if (!listItemRepository.existsById(itemId)) {
-            return ResponseEntity.notFound().build();
+    @PostMapping
+    public ResponseEntity<?> addItemToList(@RequestBody Map<String, String> body, Authentication authentication) {
+        String email = authentication.getName();
+
+        String listIdStr = body.get("listId");
+        String externalApiId = body.get("externalApiId");
+        String title = body.get("title");
+        String year = body.get("year");
+        String posterUrl = body.get("posterUrl");
+
+        if (listIdStr == null || externalApiId == null || title == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Faltan datos obligatorios"));
         }
-        listItemRepository.deleteById(itemId);
-        return ResponseEntity.noContent().build();
+
+        ListEntity list = listRepository.findById(UUID.fromString(listIdStr)).orElse(null);
+        if (list == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Lista no encontrada"));
+        }
+
+        if (!list.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No puedes añadir elementos a una lista ajena"));
+        }
+
+        ListItem newItem = ListItem.builder()
+                .list(list)
+                .externalApiId(externalApiId)
+                .title(title)
+                .year(year)
+                .posterUrl(posterUrl)
+                .addedAt(Instant.now())
+                .build();
+
+        listItemRepository.save(newItem);
+        return ResponseEntity.status(201).body(newItem);
+    }
+
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<?> deleteItemFromList(@PathVariable UUID itemId, Authentication authentication) {
+        String email = authentication.getName();
+
+        ListItem item = listItemRepository.findById(itemId).orElse(null);
+        if (item == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Elemento no encontrado"));
+        }
+
+        if (!item.getList().getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No puedes borrar un elemento de una lista ajena"));
+        }
+
+        listItemRepository.delete(item);
+        return ResponseEntity.ok(Map.of("message", "Elemento borrado de la lista"));
     }
 }

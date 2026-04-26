@@ -3,6 +3,7 @@ package com.example.traiviu_backend.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class User {
     private boolean blocked = false;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
     private Instant lastLoginAt;

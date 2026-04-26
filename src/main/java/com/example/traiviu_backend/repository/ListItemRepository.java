@@ -8,8 +8,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ListItemRepository extends JpaRepository<ListItem, UUID> {
-
-    List<ListItem> findByList(ListEntity list);
-
-    boolean existsByListAndTmdbIdAndMediaType(ListEntity list, Integer tmdbId, String mediaType);
+    List<ListItem> findByListOrderByAddedAtDesc(ListEntity list);
 }
