@@ -1,30 +1,61 @@
 package com.example.traiviu_backend.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import com.example.traiviu_backend.model.ClanMemberId;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "clan_members",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"clanId", "userId"})
-)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Table(name = "clan_members")
 public class ClanMember {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @EmbeddedId
+    private ClanMemberId id;
 
-    @Column(nullable = false)
-    private String clanId;
+    @Column(name = "role", nullable = false, length = 20)
+    private String role;
 
-    @Column(nullable = false)
-    private String userId;
+    @Column(name = "joined_at", nullable = false)
+    private LocalDateTime joinedAt;
 
-    @Column(nullable = false)
-    private String roleInClan; // OWNER, MEMBER
+    @Column(name = "notifications_enabled", nullable = false)
+    private Boolean notificationsEnabled;
+
+    public ClanMember() {
+    }
+
+    public ClanMemberId getId() {
+        return id;
+    }
+
+    public void setId(ClanMemberId id) {
+        this.id = id;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public LocalDateTime getJoinedAt() {
+        return joinedAt;
+    }
+
+    public void setJoinedAt(LocalDateTime joinedAt) {
+        this.joinedAt = joinedAt;
+    }
+
+    public Boolean getNotificationsEnabled() {
+        return notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(Boolean notificationsEnabled) {
+        this.notificationsEnabled = notificationsEnabled;
+    }
 }

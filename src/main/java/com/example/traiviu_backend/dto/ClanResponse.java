@@ -1,44 +1,33 @@
-package com.example.traiviu_backend.model;
-
-import com.example.traiviu_backend.model.enums.ClanStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+package com.example.traiviu_backend.dto;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
-@Table(name = "clans")
-public class Clan {
+public class ClanResponse {
 
-    @Id
-    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
-
-    @Column(name = "name", nullable = false, length = 100)
     private String name;
-
-    @Column(name = "invite_code", nullable = false, unique = true, length = 20)
     private String inviteCode;
-
-    @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
-
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private ClanStatus status;
-
-    @Column(name = "members_count", nullable = false)
+    private String status;
     private Integer membersCount;
+    private Boolean notificationsEnabled;
 
-    public Clan() {
+    public ClanResponse() {
+    }
+
+    public ClanResponse(UUID id, String name, String inviteCode, UUID ownerId,
+                        LocalDateTime createdAt, String status, Integer membersCount,
+                        Boolean notificationsEnabled) {
+        this.id = id;
+        this.name = name;
+        this.inviteCode = inviteCode;
+        this.ownerId = ownerId;
+        this.createdAt = createdAt;
+        this.status = status;
+        this.membersCount = membersCount;
+        this.notificationsEnabled = notificationsEnabled;
     }
 
     public UUID getId() {
@@ -81,11 +70,11 @@ public class Clan {
         this.createdAt = createdAt;
     }
 
-    public ClanStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(ClanStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -95,5 +84,13 @@ public class Clan {
 
     public void setMembersCount(Integer membersCount) {
         this.membersCount = membersCount;
+    }
+
+    public Boolean getNotificationsEnabled() {
+        return notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(Boolean notificationsEnabled) {
+        this.notificationsEnabled = notificationsEnabled;
     }
 }

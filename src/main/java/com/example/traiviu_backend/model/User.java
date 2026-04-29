@@ -1,11 +1,9 @@
 package com.example.traiviu_backend.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -34,7 +32,7 @@ public class User {
 
     @Builder.Default
     @Column(nullable = false, length = 10)
-    private String role = "USER"; // USER | ADMIN
+    private String role = "USER";
 
     @Builder.Default
     @Column(nullable = false)
@@ -45,8 +43,4 @@ public class User {
     private Instant createdAt = Instant.now();
 
     private Instant lastLoginAt;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "user")
-    private List<ListEntity> lists;
 }

@@ -25,12 +25,14 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new RuntimeException("El email ya está registrado");
         }
 
         User user = User.builder()
-                .email(request.getEmail().trim().toLowerCase())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .displayName(request.getDisplayName().trim())
                 .role("USER")
@@ -40,37 +42,29 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(savedUser.getEmail())
-                .password(savedUser.getPasswordHash())
-                .authorities("ROLE_" + savedUser.getRole())
-                .build();
-
-        String token = jwtService.generateToken(userDetails);
-
-        return AuthResponse.builder()
-                .token(token)
-                .userId(savedUser.getId().toString())
-                .email(savedUser.getEmail())
-                .displayName(savedUser.getDisplayName())
-                .role(savedUser.getRole())
-                .build();
+        return buildAuthResponse(savedUser);
     }
 
     public AuthResponse login(LoginRequest request) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail().trim().toLowerCase(),
+                        normalizedEmail,
                         request.getPassword()
                 )
         );
 
-        User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
 
+        return buildAuthResponse(user);
+    }
+
+    public AuthResponse buildAuthResponse(User user) {
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPasswordHash())
