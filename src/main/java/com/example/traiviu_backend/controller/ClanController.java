@@ -1,9 +1,6 @@
 package com.example.traiviu_backend.controller;
 
-import com.example.traiviu_backend.dto.ClanResponse;
-import com.example.traiviu_backend.dto.CreateClanRequest;
-import com.example.traiviu_backend.dto.JoinClanRequest;
-import com.example.traiviu_backend.dto.UpdateClanNotificationsRequest;
+import com.example.traiviu_backend.dto.*;
 import com.example.traiviu_backend.model.User;
 import com.example.traiviu_backend.repository.UserRepository;
 import com.example.traiviu_backend.service.ClanService;
@@ -27,6 +24,12 @@ public class ClanController {
     public ClanController(ClanService clanService, UserRepository userRepository) {
         this.clanService = clanService;
         this.userRepository = userRepository;
+    }
+
+    @GetMapping("/{clanId}/feed")
+    public List<ClanFeedItemResponse> getClanFeed(@PathVariable UUID clanId) {
+        UUID userId = getCurrentUserId();
+        return clanService.getClanFeed(userId, clanId);
     }
 
     @PostMapping
@@ -62,8 +65,10 @@ public class ClanController {
     }
 
     @PatchMapping("/{clanId}/notifications")
-    public ClanResponse updateNotifications(@PathVariable UUID clanId,
-                                            @Valid @RequestBody UpdateClanNotificationsRequest request) {
+    public ClanResponse updateNotifications(
+            @PathVariable UUID clanId,
+            @Valid @RequestBody UpdateClanNotificationsRequest request
+    ) {
         UUID userId = getCurrentUserId();
         return clanService.updateNotifications(userId, clanId, request);
     }
@@ -82,5 +87,15 @@ public class ClanController {
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
         return user.getId();
+    }
+
+    @PostMapping("/{clanId}/recommendations")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void recommendToClan(
+            @PathVariable UUID clanId,
+            @Valid @RequestBody ClanRecommendationRequest request
+    ) {
+        UUID userId = getCurrentUserId();
+        clanService.recommendToClan(userId, clanId, request);
     }
 }

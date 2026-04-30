@@ -20,30 +20,47 @@ public class ClanFeedEvent {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "clanId", nullable = false)
+    @Column(name = "clan_id", nullable = false)
     private UUID clanId;
 
-    @Column(name = "userId", nullable = false)
+    @Column(name = "title", length = 255)
+    private String title;
+
+    @Column(name = "release_year")
+    private Integer year;
+
+    @Column(name = "poster_url", length = 500)
+    private String posterUrl;
+
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 20)
+    @Column(name = "type", nullable = false, length = 30)
     private FeedEventType type;
 
-    @Column(name = "tmdbId", nullable = false)
+    @Column(name = "tmdb_id")
     private Integer tmdbId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "mediaType", nullable = false, length = 20)
+    @Column(name = "media_type", length = 20)
     private MediaType mediaType;
 
-    @Column(name = "createdAt", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     public ClanFeedEvent() {
     }
 
-    public ClanFeedEvent(UUID id, UUID clanId, UUID userId, FeedEventType type, Integer tmdbId, MediaType mediaType, LocalDateTime createdAt) {
+    public ClanFeedEvent(
+            UUID id,
+            UUID clanId,
+            UUID userId,
+            FeedEventType type,
+            Integer tmdbId,
+            MediaType mediaType,
+            LocalDateTime createdAt
+    ) {
         this.id = id;
         this.clanId = clanId;
         this.userId = userId;
@@ -107,5 +124,29 @@ public class ClanFeedEvent {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    public String getPosterUrl() {
+        return posterUrl;
+    }
+
+    public void setPosterUrl(String posterUrl) {
+        this.posterUrl = posterUrl;
     }
 }
