@@ -10,6 +10,8 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.example.traiviu_backend.dto.ClanMessageResponse;
+import com.example.traiviu_backend.dto.SendClanMessageRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -97,5 +99,20 @@ public class ClanController {
     ) {
         UUID userId = getCurrentUserId();
         clanService.recommendToClan(userId, clanId, request);
+    }
+
+    @GetMapping("/{clanId}/messages")
+    public List<ClanMessageResponse> getClanMessages(@PathVariable UUID clanId) {
+        UUID userId = getCurrentUserId();
+        return clanService.getClanMessages(userId, clanId);
+    }
+
+    @PostMapping("/{clanId}/messages")
+    public ClanMessageResponse sendClanMessage(
+            @PathVariable UUID clanId,
+            @Valid @RequestBody SendClanMessageRequest request
+    ) {
+        UUID userId = getCurrentUserId();
+        return clanService.sendMessage(userId, clanId, request);
     }
 }
