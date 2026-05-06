@@ -15,8 +15,6 @@ import com.example.traiviu_backend.repository.ClanRepository;
 import com.example.traiviu_backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.traiviu_backend.model.ClanMessage;
-import com.example.traiviu_backend.repository.ClanMessageRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,20 +27,17 @@ public class ClanService {
     private final ClanMemberRepository clanMemberRepository;
     private final ClanFeedEventRepository clanFeedEventRepository;
     private final UserRepository userRepository;
-    private final ClanMessageRepository clanMessageRepository;
 
     public ClanService(
             ClanRepository clanRepository,
             ClanMemberRepository clanMemberRepository,
             ClanFeedEventRepository clanFeedEventRepository,
-            UserRepository userRepository,
-            ClanMessageRepository clanMessageRepository
+            UserRepository userRepository
     ) {
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.clanFeedEventRepository = clanFeedEventRepository;
         this.userRepository = userRepository;
-        this.clanMessageRepository = clanMessageRepository;
     }
 
     @Transactional
@@ -285,63 +280,6 @@ public class ClanService {
                 request.getTitle(),
                 year,
                 request.getPosterUrl()
-        );
-    }
-
-    @Transactional(readOnly = true)
-    public List<ClanMessageResponse> getClanMessages(UUID userId, UUID clanId) {
-        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
-                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
-
-        List<ClanMessage> messages = clanMessageRepository.findByClanIdOrderByCreatedAtAsc(clanId);
-
-        return messages.stream()
-                .map(this::mapClanMessageToResponse)
-                .toList();
-    }
-
-    @Transactional
-    public ClanMessageResponse sendMessage(UUID userId, UUID clanId, SendClanMessageRequest request) {
-        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
-                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
-
-        clanRepository.findById(clanId)
-                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
-
-        String content = request.getContent() != null ? request.getContent().trim() : "";
-        if (content.isBlank()) {
-            throw new RuntimeException("El mensaje no puede estar vacío");
-        }
-
-        ClanMessage message = new ClanMessage();
-        message.setId(UUID.randomUUID());
-        message.setClanId(clanId);
-        message.setUserId(userId);
-        message.setText(content);
-        message.setCreatedAt(LocalDateTime.now());
-
-        ClanMessage saved = clanMessageRepository.save(message);
-
-        return mapClanMessageToResponse(saved);
-    }
-
-    private ClanMessageResponse mapClanMessageToResponse(ClanMessage message) {
-        User user = userRepository.findById(message.getUserId())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        String displayName =
-                user.getDisplayName() != null && !user.getDisplayName().isBlank()
-                        ? user.getDisplayName()
-                        : user.getEmail();
-
-        return new ClanMessageResponse(
-                message.getId(),
-                message.getClanId(),
-                message.getUserId(),
-                displayName,
-                user.getAvatarUrl(),
-                message.getText(),
-                message.getCreatedAt()
         );
     }
 }
