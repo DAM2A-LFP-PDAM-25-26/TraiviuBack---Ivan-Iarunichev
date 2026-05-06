@@ -5,12 +5,14 @@ import com.example.traiviu_backend.model.Clan;
 import com.example.traiviu_backend.model.ClanFeedEvent;
 import com.example.traiviu_backend.model.ClanMember;
 import com.example.traiviu_backend.model.ClanMemberId;
+import com.example.traiviu_backend.model.ClanMessage;
 import com.example.traiviu_backend.model.User;
 import com.example.traiviu_backend.model.enums.ClanStatus;
 import com.example.traiviu_backend.model.enums.FeedEventType;
 import com.example.traiviu_backend.model.enums.MediaType;
 import com.example.traiviu_backend.repository.ClanFeedEventRepository;
 import com.example.traiviu_backend.repository.ClanMemberRepository;
+import com.example.traiviu_backend.repository.ClanMessageRepository;
 import com.example.traiviu_backend.repository.ClanRepository;
 import com.example.traiviu_backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -26,17 +28,20 @@ public class ClanService {
     private final ClanRepository clanRepository;
     private final ClanMemberRepository clanMemberRepository;
     private final ClanFeedEventRepository clanFeedEventRepository;
+    private final ClanMessageRepository clanMessageRepository;
     private final UserRepository userRepository;
 
     public ClanService(
             ClanRepository clanRepository,
             ClanMemberRepository clanMemberRepository,
             ClanFeedEventRepository clanFeedEventRepository,
+            ClanMessageRepository clanMessageRepository,
             UserRepository userRepository
     ) {
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.clanFeedEventRepository = clanFeedEventRepository;
+        this.clanMessageRepository = clanMessageRepository;
         this.userRepository = userRepository;
     }
 
@@ -165,6 +170,77 @@ public class ClanService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ClanMessageResponse> getClanMessages(UUID userId, UUID clanId) {
+        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
+                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
+
+        return clanMessageRepository.findByClanIdOrderByCreatedAtAsc(clanId).stream()
+                .map(this::mapClanMessageToResponse)
+                .toList();
+    }
+
+    @Transactional
+    public ClanMessageResponse sendMessage(UUID userId, UUID clanId, SendClanMessageRequest request) {
+        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
+                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
+
+        clanRepository.findById(clanId)
+                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
+
+        ClanMessage message = new ClanMessage();
+        message.setId(UUID.randomUUID());
+        message.setClanId(clanId);
+        message.setUserId(userId);
+        message.setText(request.getContent().trim());
+        message.setCreatedAt(LocalDateTime.now());
+
+        ClanMessage saved = clanMessageRepository.save(message);
+
+        return mapClanMessageToResponse(saved);
+    }
+
+    @Transactional
+    public void recommendToClan(UUID userId, UUID clanId, ClanRecommendationRequest request) {
+        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
+                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
+
+        clanRepository.findById(clanId)
+                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
+
+        Integer tmdbId;
+        try {
+            tmdbId = Integer.valueOf(request.getExternalApiId());
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("TMDB id no válido");
+        }
+
+        MediaType mediaType =
+                "tv".equalsIgnoreCase(request.getMediaType())
+                        ? MediaType.TV
+                        : MediaType.MOVIE;
+
+        Integer year = null;
+        if (request.getYear() != null && !request.getYear().isBlank()) {
+            try {
+                year = Integer.valueOf(request.getYear());
+            } catch (NumberFormatException e) {
+                year = null;
+            }
+        }
+
+        saveFeedEvent(
+                clanId,
+                userId,
+                FeedEventType.RECOMMENDED,
+                tmdbId,
+                mediaType,
+                request.getTitle(),
+                year,
+                request.getPosterUrl()
+        );
+    }
+
     private ClanFeedItemResponse mapFeedEventToResponse(ClanFeedEvent event) {
         User user = userRepository.findById(event.getUserId())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -193,6 +269,25 @@ public class ClanService {
                 event.getPosterUrl(),
                 null,
                 event.getCreatedAt()
+        );
+    }
+
+    private ClanMessageResponse mapClanMessageToResponse(ClanMessage message) {
+        User user = userRepository.findById(message.getUserId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String displayName = user.getDisplayName() != null && !user.getDisplayName().isBlank()
+                ? user.getDisplayName()
+                : user.getEmail();
+
+        return new ClanMessageResponse(
+                message.getId(),
+                message.getClanId(),
+                message.getUserId(),
+                displayName,
+                user.getAvatarUrl(),
+                message.getText(),
+                message.getCreatedAt()
         );
     }
 
@@ -240,46 +335,5 @@ public class ClanService {
                 .replace("-", "")
                 .substring(0, 8)
                 .toUpperCase();
-    }
-
-    @Transactional
-    public void recommendToClan(UUID userId, UUID clanId, ClanRecommendationRequest request) {
-        clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
-                .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
-
-        clanRepository.findById(clanId)
-                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
-
-        Integer tmdbId;
-        try {
-            tmdbId = Integer.valueOf(request.getExternalApiId());
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("TMDB id no válido");
-        }
-
-        MediaType mediaType =
-                "tv".equalsIgnoreCase(request.getMediaType())
-                        ? MediaType.TV
-                        : MediaType.MOVIE;
-
-        Integer year = null;
-        if (request.getYear() != null && !request.getYear().isBlank()) {
-            try {
-                year = Integer.valueOf(request.getYear());
-            } catch (NumberFormatException e) {
-                year = null;
-            }
-        }
-
-        saveFeedEvent(
-                clanId,
-                userId,
-                FeedEventType.RECOMMENDED,
-                tmdbId,
-                mediaType,
-                request.getTitle(),
-                year,
-                request.getPosterUrl()
-        );
     }
 }

@@ -32,6 +32,22 @@ public class ClanController {
         return clanService.getClanFeed(userId, clanId);
     }
 
+    @GetMapping("/{clanId}/messages")
+    public List<ClanMessageResponse> getClanMessages(@PathVariable UUID clanId) {
+        UUID userId = getCurrentUserId();
+        return clanService.getClanMessages(userId, clanId);
+    }
+
+    @PostMapping("/{clanId}/messages")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ClanMessageResponse sendMessage(
+            @PathVariable UUID clanId,
+            @Valid @RequestBody SendClanMessageRequest request
+    ) {
+        UUID userId = getCurrentUserId();
+        return clanService.sendMessage(userId, clanId, request);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ClanResponse createClan(@Valid @RequestBody CreateClanRequest request) {
@@ -73,6 +89,16 @@ public class ClanController {
         return clanService.updateNotifications(userId, clanId, request);
     }
 
+    @PostMapping("/{clanId}/recommendations")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void recommendToClan(
+            @PathVariable UUID clanId,
+            @Valid @RequestBody ClanRecommendationRequest request
+    ) {
+        UUID userId = getCurrentUserId();
+        clanService.recommendToClan(userId, clanId, request);
+    }
+
     private UUID getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -87,15 +113,5 @@ public class ClanController {
                 .orElseThrow(() -> new RuntimeException("Usuario autenticado no encontrado"));
 
         return user.getId();
-    }
-
-    @PostMapping("/{clanId}/recommendations")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void recommendToClan(
-            @PathVariable UUID clanId,
-            @Valid @RequestBody ClanRecommendationRequest request
-    ) {
-        UUID userId = getCurrentUserId();
-        clanService.recommendToClan(userId, clanId, request);
     }
 }
