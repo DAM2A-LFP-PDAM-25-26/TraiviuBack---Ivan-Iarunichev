@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: traiviu-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: traiviu
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: iaruni
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - traiviu-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: traiviu-backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/traiviu
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: iaruni
+      ALLOWED_ORIGINS: https://ivani26.iesmontenaranco.com
+    ports:
+      - "8000:8085"
+    networks:
+      - traiviu-network
+
+volumes:
+  postgres_data:
+
+networks:
+  traiviu-network:
