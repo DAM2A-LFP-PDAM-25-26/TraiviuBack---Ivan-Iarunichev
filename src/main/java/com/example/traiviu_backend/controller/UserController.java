@@ -5,11 +5,14 @@ import com.example.traiviu_backend.dto.auth.AuthResponse;
 import com.example.traiviu_backend.model.User;
 import com.example.traiviu_backend.repository.UserRepository;
 import com.example.traiviu_backend.service.AuthService;
+import com.example.traiviu_backend.service.PublicUrlService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +32,10 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final PublicUrlService publicUrlService;
+
+    @Value("${app.upload.dir}")
+    private String uploadBaseDir;
 
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getMe(Authentication authentication) {
@@ -40,7 +48,7 @@ public class UserController {
         data.put("id", user.getId());
         data.put("email", user.getEmail());
         data.put("displayName", user.getDisplayName());
-        data.put("avatarUrl", user.getAvatarUrl());
+        data.put("avatarUrl", publicUrlService.buildPublicUrl(user.getAvatarUrl()));
         data.put("role", user.getRole());
         data.put("blocked", user.isBlocked());
         data.put("createdAt", user.getCreatedAt());
@@ -85,30 +93,44 @@ public class UserController {
             throw new RuntimeException("No se ha enviado ninguna imagen");
         }
 
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new RuntimeException("El archivo debe ser una imagen válida");
+        }
+
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        String originalFilename = file.getOriginalFilename() != null
-                ? file.getOriginalFilename()
-                : "avatar.jpg";
+        Path avatarDir = Paths.get(uploadBaseDir, "avatars");
+        Files.createDirectories(avatarDir);
+
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isBlank()) {
+            String oldFileName = Paths.get(user.getAvatarUrl()).getFileName().toString();
+            Path oldFilePath = avatarDir.resolve(oldFileName);
+            try {
+                Files.deleteIfExists(oldFilePath);
+            } catch (IOException ignored) {
+            }
+        }
+
+        String originalFilename = StringUtils.cleanPath(
+                file.getOriginalFilename() != null ? file.getOriginalFilename() : "avatar.jpg"
+        );
 
         String safeFilename = UUID.randomUUID() + "-" + originalFilename.replaceAll("\\s+", "_");
 
-        Path uploadDir = Paths.get("uploads/avatars");
-        Files.createDirectories(uploadDir);
+        Path filePath = avatarDir.resolve(safeFilename);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        Path filePath = uploadDir.resolve(safeFilename);
-        Files.write(filePath, file.getBytes());
+        String avatarPath = "/uploads/avatars/" + safeFilename;
 
-        String avatarUrl = "/uploads/avatars/" + safeFilename;
-
-        user.setAvatarUrl(avatarUrl);
+        user.setAvatarUrl(avatarPath);
         userRepository.save(user);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("avatarUrl", avatarUrl);
+        data.put("avatarUrl", publicUrlService.buildPublicUrl(avatarPath));
 
         return ResponseEntity.ok(data);
     }
@@ -119,6 +141,17 @@ public class UserController {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Path avatarDir = Paths.get(uploadBaseDir, "avatars");
+
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isBlank()) {
+            String oldFileName = Paths.get(user.getAvatarUrl()).getFileName().toString();
+            Path oldFilePath = avatarDir.resolve(oldFileName);
+            try {
+                Files.deleteIfExists(oldFilePath);
+            } catch (IOException ignored) {
+            }
+        }
 
         user.setAvatarUrl(null);
         userRepository.save(user);

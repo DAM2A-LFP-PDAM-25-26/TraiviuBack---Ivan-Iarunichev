@@ -25,6 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final PublicUrlService publicUrlService;
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest request) {
@@ -94,7 +95,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .role(user.getRole())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(publicUrlService.buildPublicUrl(user.getAvatarUrl()))
                 .build();
     }
 }

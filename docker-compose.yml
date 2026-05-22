@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: traiviu-postgres
-    restart: always
+    restart: "no"
     environment:
       POSTGRES_DB: traiviu
       POSTGRES_USER: postgres
@@ -10,7 +10,6 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./initdb:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     networks:
       - traiviu-network
@@ -27,7 +26,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/traiviu
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: iaruni
-      ALLOWED_ORIGINS: https://ivani26.iesmontenaranco.com
+      APP_UPLOAD_DIR: /app/uploads
+      APP_PUBLIC_BASE_URL: "http://192.168.7.155:8000"
+      ALLOWED_ORIGINS: "https://localhost,http://localhost,http://localhost:8100,http://localhost:4200,https://ivani26.iesmontenaranco.com"
     ports:
       - "8000:8085"
     volumes:
@@ -40,3 +41,4 @@ volumes:
 
 networks:
   traiviu-network:
+    driver: bridge
