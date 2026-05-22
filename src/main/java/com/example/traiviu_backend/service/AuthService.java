@@ -68,7 +68,10 @@ public class AuthService {
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);
 
-        return buildAuthResponse(user);
+        User refreshedUser = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        return buildAuthResponse(refreshedUser);
     }
 
     public AuthResponse buildAuthResponse(User user) {

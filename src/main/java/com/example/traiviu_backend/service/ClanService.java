@@ -316,6 +316,28 @@ public class ClanService {
         clanFeedEventRepository.save(event);
     }
 
+    private List<ClanMemberResponse> getClanMembersResponse(UUID clanId) {
+        return clanMemberRepository.findByIdClanId(clanId).stream()
+                .map(member -> {
+                    User user = userRepository.findById(member.getId().getUserId())
+                            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+                    String displayName = user.getDisplayName() != null && !user.getDisplayName().isBlank()
+                            ? user.getDisplayName()
+                            : user.getEmail();
+
+                    return new ClanMemberResponse(
+                            user.getId(),
+                            displayName,
+                            user.getAvatarUrl(),
+                            member.getRole(),
+                            member.getJoinedAt(),
+                            member.getNotificationsEnabled()
+                    );
+                })
+                .toList();
+    }
+
     private ClanResponse mapToResponse(Clan clan, Boolean notificationsEnabled) {
         return new ClanResponse(
                 clan.getId(),
@@ -325,7 +347,8 @@ public class ClanService {
                 clan.getCreatedAt(),
                 clan.getStatus().name(),
                 clan.getMembersCount(),
-                notificationsEnabled
+                notificationsEnabled,
+                getClanMembersResponse(clan.getId())
         );
     }
 

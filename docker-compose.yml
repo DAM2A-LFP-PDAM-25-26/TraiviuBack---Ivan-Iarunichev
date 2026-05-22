@@ -30,6 +30,8 @@ services:
       ALLOWED_ORIGINS: https://ivani26.iesmontenaranco.com
     ports:
       - "8000:8085"
+    volumes:
+      - ./uploads:/app/uploads
     networks:
       - traiviu-network
 
