@@ -34,6 +34,9 @@ public class ListItem {
 
     private String posterUrl;
 
+    @Column(name = "media_type", nullable = false)
+    private String mediaType;
+
     @Column(nullable = false)
     private Instant addedAt;
 }

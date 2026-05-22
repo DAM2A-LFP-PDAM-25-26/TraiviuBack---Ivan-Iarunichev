@@ -48,9 +48,16 @@ public class ListItemController {
         String title = body.get("title");
         String year = body.get("year");
         String posterUrl = body.get("posterUrl");
+        String mediaType = body.get("mediaType");
 
-        if (listIdStr == null || externalApiId == null || title == null) {
+        if (listIdStr == null || externalApiId == null || title == null || mediaType == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Faltan datos obligatorios"));
+        }
+
+        mediaType = mediaType.trim().toLowerCase();
+
+        if (!mediaType.equals("movie") && !mediaType.equals("tv")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "mediaType debe ser 'movie' o 'tv'"));
         }
 
         ListEntity list = listRepository.findById(UUID.fromString(listIdStr)).orElse(null);
@@ -68,6 +75,7 @@ public class ListItemController {
                 .title(title)
                 .year(year)
                 .posterUrl(posterUrl)
+                .mediaType(mediaType)
                 .addedAt(Instant.now())
                 .build();
 
