@@ -21,4 +21,8 @@ public interface ClanMemberRepository extends JpaRepository<ClanMember, ClanMemb
     @Modifying
     @Query("DELETE FROM ClanMember cm WHERE cm.id.clanId = :clanId")
     void deleteByClanId(@Param("clanId") UUID clanId);
+
+    @Modifying
+    @Query("DELETE FROM ClanMember cm WHERE cm.id.userId = :userId")
+    void deleteByUserId(@Param("userId") UUID userId);
 }

@@ -114,4 +114,11 @@ public class ClanController {
 
         return user.getId();
     }
+
+    @DeleteMapping("/{clanId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteClan(@PathVariable UUID clanId) {
+        UUID userId = getCurrentUserId();
+        clanService.ownerDeleteClan(userId, clanId);
+    }
 }

@@ -3,11 +3,10 @@ package com.example.traiviu_backend.service;
 import com.example.traiviu_backend.dto.admin.*;
 import com.example.traiviu_backend.model.Clan;
 import com.example.traiviu_backend.model.ClanMember;
+import com.example.traiviu_backend.model.ListEntity;
 import com.example.traiviu_backend.model.User;
 import com.example.traiviu_backend.model.enums.ClanStatus;
-import com.example.traiviu_backend.repository.ClanMemberRepository;
-import com.example.traiviu_backend.repository.ClanRepository;
-import com.example.traiviu_backend.repository.UserRepository;
+import com.example.traiviu_backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,11 @@ public class AdminService {
     private final ClanRepository clanRepository;
     private final ClanMemberRepository clanMemberRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final ListRepository listRepository;
+    private final ListItemRepository listItemRepository;
+    private final ClanFeedEventRepository clanFeedEventRepository;
+    private final ClanMessageRepository clanMessageRepository;
 
     @Transactional(readOnly = true)
     public List<AdminUserDto> getAllUsers() {
@@ -81,6 +85,23 @@ public class AdminService {
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        List<ListEntity> userLists = listRepository.findByUserId(id);
+        for (ListEntity list : userLists) {
+            listItemRepository.deleteByListId(list.getId());
+        }
+        listRepository.deleteAll(userLists);
+
+        clanMemberRepository.deleteByUserId(id);
+
+        clanFeedEventRepository.deleteAll(clanFeedEventRepository.findByUserId(id));
+        clanMessageRepository.deleteAll(clanMessageRepository.findByUserId(id));
+
+        List<Clan> ownedClans = clanRepository.findByOwnerId(id);
+        for (Clan clan : ownedClans) {
+            deleteClanAndData(clan.getId());
+        }
+
         userRepository.delete(user);
     }
 
@@ -111,10 +132,7 @@ public class AdminService {
 
     @Transactional
     public void deleteClan(UUID id) {
-        Clan clan = clanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
-        clanMemberRepository.deleteByClanId(id);
-        clanRepository.delete(clan);
+        deleteClanAndData(id);
     }
 
     @Transactional(readOnly = true)
@@ -186,5 +204,12 @@ public class AdminService {
                 clan.getStatus().name(),
                 clan.getMembersCount()
         );
+    }
+
+    private void deleteClanAndData(UUID clanId) {
+        clanMemberRepository.deleteByClanId(clanId);
+        clanFeedEventRepository.deleteAll(clanFeedEventRepository.findByClanId(clanId));
+        clanMessageRepository.deleteAll(clanMessageRepository.findByClanIdOrderByCreatedAtAsc(clanId));
+        clanRepository.deleteById(clanId);
     }
 }

@@ -9,4 +9,8 @@ import java.util.UUID;
 public interface ClanFeedEventRepository extends JpaRepository<ClanFeedEvent, UUID> {
 
     List<ClanFeedEvent> findByClanIdOrderByCreatedAtDesc(UUID clanId);
+
+    List<ClanFeedEvent> findByUserId(UUID userId);
+
+    List<ClanFeedEvent> findByClanId(UUID clanId);
 }

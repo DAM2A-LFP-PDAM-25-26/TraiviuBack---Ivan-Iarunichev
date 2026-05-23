@@ -105,19 +105,41 @@ public class ClanService {
         Clan clan = clanRepository.findById(clanId)
                 .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
 
-        if (clan.getOwnerId().equals(userId)) {
-            throw new RuntimeException("El creador del clan no puede salir sin transferir o eliminar el clan");
-        }
-
         ClanMember member = clanMemberRepository.findByIdClanIdAndIdUserId(clanId, userId)
                 .orElseThrow(() -> new RuntimeException("No perteneces a este clan"));
 
         clanMemberRepository.delete(member);
 
-        clan.setMembersCount(Math.max(0, clan.getMembersCount() - 1));
+        int currentCount = clan.getMembersCount() != null ? clan.getMembersCount() : 0;
+        int newCount = Math.max(0, currentCount - 1);
+        clan.setMembersCount(newCount);
         clanRepository.save(clan);
 
         saveFeedEvent(clanId, userId, FeedEventType.LEFT, null, null, null, null, null);
+
+        if (newCount == 0) {
+            deleteClanAndData(clanId);
+        }
+    }
+
+    @Transactional
+    public void deleteClanAndData(UUID clanId) {
+        clanMemberRepository.deleteAll(clanMemberRepository.findByIdClanId(clanId));
+        clanFeedEventRepository.deleteAll(clanFeedEventRepository.findByClanIdOrderByCreatedAtDesc(clanId));
+        clanMessageRepository.deleteAll(clanMessageRepository.findByClanIdOrderByCreatedAtAsc(clanId));
+        clanRepository.deleteById(clanId);
+    }
+
+    @Transactional
+    public void ownerDeleteClan(UUID userId, UUID clanId) {
+        Clan clan = clanRepository.findById(clanId)
+                .orElseThrow(() -> new RuntimeException("Clan no encontrado"));
+
+        if (!clan.getOwnerId().equals(userId)) {
+            throw new RuntimeException("Solo el creador puede eliminar el clan");
+        }
+
+        deleteClanAndData(clanId);
     }
 
     @Transactional(readOnly = true)

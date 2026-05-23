@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface ClanMessageRepository extends JpaRepository<ClanMessage, UUID> {
 
     List<ClanMessage> findByClanIdOrderByCreatedAtAsc(UUID clanId);
+
+    List<ClanMessage> findByUserId(UUID userId);
 }

@@ -8,5 +8,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ListItemRepository extends JpaRepository<ListItem, UUID> {
+
     List<ListItem> findByListOrderByAddedAtDesc(ListEntity list);
+
+    void deleteByListId(UUID listId);
 }
