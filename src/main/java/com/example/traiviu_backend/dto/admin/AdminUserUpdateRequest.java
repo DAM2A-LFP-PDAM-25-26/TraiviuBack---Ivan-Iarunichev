@@ -8,5 +8,6 @@ public record AdminUserUpdateRequest(
         @NotBlank @Email String email,
         @NotBlank String displayName,
         @NotNull String role,
-        @NotNull boolean blocked
+        @NotNull boolean blocked,
+        String password
 ) {}

@@ -51,9 +51,14 @@ public class AdminService {
             throw new RuntimeException("El email ya está registrado");
         }
 
+        String rawPassword = request.password();
+        if (rawPassword == null || rawPassword.trim().isEmpty()) {
+            throw new RuntimeException("La contraseña es obligatoria");
+        }
+
         User user = User.builder()
                 .email(email)
-                .passwordHash(passwordEncoder.encode("changeme123"))
+                .passwordHash(passwordEncoder.encode(rawPassword.trim()))
                 .displayName(request.displayName().trim())
                 .role(normalizeRole(request.role()))
                 .blocked(request.blocked())
